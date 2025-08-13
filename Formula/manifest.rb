@@ -1,4 +1,4 @@
-class ManifestCli < Formula
+class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
   url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v8.4.0.tar.gz"
