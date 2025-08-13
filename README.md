@@ -5,7 +5,7 @@ This is a [Homebrew](https://brew.sh/) tap containing formulas for Fidence.io to
 ## 📦 Available Formulas
 
 ### [manifest](Formula/manifest.rb)
-A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification.
+A powerful CLI tool for versioning, AI documenting, and repository operations.
 
 **Install:**
 ```bash
