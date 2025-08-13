@@ -4,7 +4,7 @@ This is a [Homebrew](https://brew.sh/) tap containing formulas for Fidence.io to
 
 ## 📦 Available Formulas
 
-### [manifest-cli](Formula/manifest-cli.rb)
+### [manifest](Formula/manifest.rb)
 A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification.
 
 **Install:**
@@ -12,8 +12,8 @@ A powerful CLI tool for managing manifest files, versioning, and repository oper
 # Add the tap
 brew tap fidenceio/fidenceio-homebrew-tap
 
-# Install manifest-cli
-brew install manifest-cli
+# Install manifest
+brew install manifest
 ```
 
 **Features:**
@@ -29,7 +29,7 @@ brew install manifest-cli
 brew tap fidenceio/fidenceio-homebrew-tap
 ```
 
-## �� Requirements
+## 📋 Requirements
 
 - macOS or Linux
 - Homebrew installed
@@ -39,9 +39,9 @@ brew tap fidenceio/fidenceio-homebrew-tap
 ## 🚀 Quick Start
 
 ```bash
-# Add the tap and install manifest-cli
+# Add the tap and install manifest
 brew tap fidenceio/fidenceio-homebrew-tap
-brew install manifest-cli
+brew install manifest
 
 # Test the installation
 manifest --help
@@ -53,7 +53,7 @@ manifest test
 - **Manifest CLI**: [https://github.com/fidenceio/manifest.cli](https://github.com/fidenceio/manifest.cli)
 - **Homebrew**: [https://brew.sh/](https://brew.sh/)
 
-## 🤝 Contributing
+## �� Contributing
 
 To add new formulas or update existing ones:
 
