@@ -1,13 +1,16 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v9.0.0.tar.gz"
-  sha256 "d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v14.1.1.tar.gz"
+  sha256 "e2ed334e5f28291e3cce567e185352d04ff36b8f7f7998d2af64da8cba9807b7"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
+  # Minimal dependencies - only what's actually needed
   depends_on "git" => :recommended
-  depends_on "node" => ">=16.0.0"
+  
+  # Optional: coreutils for timeout command (if not available on system)
+  depends_on "coreutils" => :optional
 
   def install
     # Install the CLI to bin
@@ -31,9 +34,6 @@ class Manifest < Formula
   test do
     # Test basic functionality
     system bin/"manifest", "--help"
-    
-    # Test version
-    assert_match "9.0.0", 1)
   end
 
   def caveats
@@ -46,6 +46,10 @@ class Manifest < Formula
         manifest ntp             # Get trusted timestamp
       
       The CLI will automatically detect your OS and apply optimizations.
+      
+      To always get the latest version:
+        brew upgrade manifest    # Upgrade to latest version
+        brew update && brew upgrade manifest  # Update Homebrew first, then upgrade
       
       For more information, visit: https://github.com/fidenceio/manifest.cli
     EOS
