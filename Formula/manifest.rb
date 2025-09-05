@@ -1,8 +1,8 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v15.24.0.tar.gz"
-  sha256 "388b71b3a91c0a78851e4ec183b3c293e4e51b65d940aad17fa1a7a22bf6666f"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v15.25.0.tar.gz"
+  sha256 "735ff28ec5e87c00eb0ebc6b7d45b89edbe68291225e3b59f71c25f80da79277"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
@@ -22,9 +22,12 @@ class Manifest < Formula
     # Copy project files to libexec
     libexec.install Dir["*"]
     
-    # Update the wrapper to point to the correct location
+    # Create a simple wrapper that points to the installed location
+    bin.install_symlink libexec/"src/cli/manifest-cli-wrapper.sh" => "manifest"
+    
+    # Update the wrapper to use the installed location
     inreplace bin/"manifest" do |s|
-      s.gsub! "$HOME/.manifest-cli", libexec
+      s.gsub! /CLI_DIR="\$\(find_cli_dir\)"/, "CLI_DIR=\"#{libexec}\""
     end
     
     # Create a proper shebang
