@@ -1,8 +1,8 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v30.1.0.tar.gz"
-  sha256 "8898ed8a3aa94426cb3f8bea25ec0b23bdb749ecd5b71d5664066c3b708bb10b"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v31.5.2.tar.gz"
+  sha256 "20f047fc44390dd6277c5afa1339f3508d3d5801c5020b112d260bdc08140ff7"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
@@ -21,6 +21,22 @@ class Manifest < Formula
       source "$CLI_DIR/modules/core/manifest-core.sh"
       main "$@"
     EOS
+  end
+
+  def post_install
+    # Clean up legacy manual installations
+    legacy_bin = Pathname.new(Dir.home)/".local"/"bin"/"manifest"
+    legacy_dir = Pathname.new(Dir.home)/".manifest-cli"
+
+    if legacy_bin.exist?
+      legacy_bin.unlink
+      ohai "Removed legacy manual install: #{legacy_bin}"
+    end
+
+    if legacy_dir.exist?
+      legacy_dir.rmtree
+      ohai "Removed legacy install directory: #{legacy_dir}"
+    end
   end
 
   test do
