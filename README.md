@@ -23,6 +23,20 @@ brew install manifest
 - 🏷️ Git operations and version management
 - 🖥️ Cross-platform OS detection and optimization
 
+## 🧭 Overall Manifest Strategy
+
+This tap is one part of a coordinated three-repository strategy:
+
+- **CLI (`manifest.cli`)**: command workflow and release orchestration
+- **Cloud (`manifest.cloud`)**: AI intelligence and recommendation services
+- **Tap (`homebrew.tap`)**: package distribution and upgrade delivery
+
+North Star references:
+
+- [Manifest CLI North Star](https://github.com/fidenceio/manifest.cli/blob/main/docs/NORTH_STAR.md)
+- [Manifest Cloud North Star](https://github.com/fidenceio/manifest.cloud/blob/main/docs/NORTH_STAR.md)
+- [Homebrew Tap North Star](NORTH_STAR.md)
+
 ## 🔧 Adding This Tap
 
 ```bash
@@ -53,7 +67,7 @@ manifest test
 - **Manifest CLI**: [https://github.com/fidenceio/manifest.cli](https://github.com/fidenceio/manifest.cli)
 - **Homebrew**: [https://brew.sh/](https://brew.sh/)
 
-## �� Contributing
+## 🤝 Contributing
 
 To add new formulas or update existing ones:
 

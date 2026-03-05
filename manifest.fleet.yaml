@@ -1,0 +1,79 @@
+# =============================================================================
+# MANIFEST FLEET CONFIGURATION
+# =============================================================================
+# Generated manually for fidenceio.manifest workspace
+# Date: 2026-02-07
+#
+# This file defines the Manifest project's repositories ("fleet") that
+# Manifest CLI manages together for coordinated versioning and releases.
+# =============================================================================
+
+fleet:
+  name: "fidenceio-manifest"
+  description: "Manifest CLI platform - coordinated versioning and release tooling"
+  versioning: "date"
+  version_file: "FLEET_VERSION"
+
+# =============================================================================
+# SERVICES
+# =============================================================================
+services:
+
+  fidenceio.manifest.cli:
+    path: "./fidenceio.manifest.cli"
+    url: "git@github.com:fidenceio/manifest.cli.git"
+    type: "tool"
+    branch: "main"
+    description: "Manifest CLI - the core command-line tool"
+
+  fidenceio.manifest.cloud:
+    path: "./fidenceio.manifest.cloud"
+    url: "git@github.com:fidenceio/manifest.cloud.git"
+    type: "service"
+    branch: "main"
+    description: "Manifest Cloud - cloud deployment and sync"
+
+  fidenceio.homebrew.tap:
+    path: "./fidenceio.homebrew.tap"
+    url: "git@github.com:fidenceio/fidenceio-homebrew-tap.git"
+    type: "infrastructure"
+    branch: "main"
+    description: "Homebrew tap for distributing Manifest CLI"
+
+# =============================================================================
+# OPERATIONS
+# =============================================================================
+operations:
+  default_bump: "patch"
+  parallel: true
+  max_parallel: 4
+
+  commit:
+    strategy: "per-service"
+
+  push:
+    strategy: "batched"
+
+# =============================================================================
+# CHANGELOG
+# =============================================================================
+changelog:
+  unified:
+    enabled: true
+    file: "CHANGELOG_FLEET.md"
+    include:
+      summary_table: true
+      breaking_changes: true
+      per_service_sections: true
+      compatibility_matrix: true
+
+  per_service:
+    enabled: true
+
+# =============================================================================
+# VALIDATION
+# =============================================================================
+validation:
+  require_clean_status: true
+  enforce_dependencies: true
+  require_expected_branch: true

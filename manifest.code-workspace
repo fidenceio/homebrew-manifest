@@ -1,0 +1,16 @@
+{
+    "folders": [
+        {
+            "path": "fidenceio.manifest.cli",
+            "name": "Manifest CLI"
+        },
+        {
+            "path": "fidenceio.manifest.cloud",
+            "name": "Manifest Cloud"
+        },
+        {
+            "path": "fidenceio.homebrew.tap",
+            "name": "Homebrew Tap"
+        }
+    ]
+}
