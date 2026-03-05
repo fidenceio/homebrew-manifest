@@ -1,3 +1,17 @@
+## 📋 Version Information
+
+| Property | Value |
+|----------|-------|
+| **Current Version** | `1.1.0` |
+| **Release Date** | `2026-03-05 21:11:45 UTC` |
+| **Git Tag** | `v1.1.0` |
+| **Branch** | `main` |
+| **Last Updated** | `2026-03-05 21:11:45 UTC` |
+| **CLI Version** | `1.1.0` |
+
+---
+*This repo is versioned and documented by [Manifest CLI](https://github.com/fidenceio/manifest.cli).*
+
 # 🍺 Fidence.io Homebrew Tap
 
 This is a [Homebrew](https://brew.sh/) tap containing formulas for Fidence.io tools and utilities.
