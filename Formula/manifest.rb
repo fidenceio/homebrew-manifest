@@ -1,8 +1,8 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v35.7.0.tar.gz"
-  sha256 "994810193884b4daad19548152f85e555986c5f069dfecc944e6f7132172bba5"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v36.0.0.tar.gz"
+  sha256 "6b5f8282077544e596947a813c68c726ef8e80c38d5402842dd4f54f89bd9c79"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
@@ -40,7 +40,7 @@ class Manifest < Formula
     end
 
     # Apply config migrations so `brew upgrade` is functionally equivalent
-    # to `manifest update --force` for user-global settings.
+    # to `manifest upgrade --force` for user-global settings.
     if user_global_config.exist?
       migration_cmd = [
         "#{bin}/manifest",
