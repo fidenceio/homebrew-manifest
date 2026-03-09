@@ -1,8 +1,8 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v35.6.0.tar.gz"
-  sha256 "3fb305b650332b41bb3e1df1264c741f9ae70f86b4390f3068e428b74257dd26"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v35.7.0.tar.gz"
+  sha256 "994810193884b4daad19548152f85e555986c5f069dfecc944e6f7132172bba5"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
@@ -27,6 +27,7 @@ class Manifest < Formula
     # Clean up legacy manual installations
     legacy_bin = Pathname.new(Dir.home)/".local"/"bin"/"manifest"
     legacy_dir = Pathname.new(Dir.home)/".manifest-cli"
+    user_global_config = Pathname.new(Dir.home)/".env.manifest.global"
 
     if legacy_bin.exist?
       legacy_bin.unlink
@@ -36,6 +37,25 @@ class Manifest < Formula
     if legacy_dir.exist?
       legacy_dir.rmtree
       ohai "Removed legacy install directory: #{legacy_dir}"
+    end
+
+    # Apply config migrations so `brew upgrade` is functionally equivalent
+    # to `manifest update --force` for user-global settings.
+    if user_global_config.exist?
+      migration_cmd = [
+        "#{bin}/manifest",
+        "config",
+        "doctor",
+        "--fix",
+        "--file",
+        user_global_config.to_s
+      ]
+
+      if system(*migration_cmd)
+        ohai "Migrated user config: #{user_global_config}"
+      else
+        opoo "Could not auto-migrate #{user_global_config}. Run: manifest config doctor --fix"
+      end
     end
   end
 
