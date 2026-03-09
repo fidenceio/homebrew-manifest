@@ -27,6 +27,7 @@ pids
 *.pid
 *.seed
 *.pid.lock
+.manifest_last_update
 
 # Coverage directory used by tools like istanbul
 coverage/
