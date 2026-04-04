@@ -1,8 +1,8 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v39.4.0.tar.gz"
-  sha256 "65090c9ca68185b9573315547b91178c86f02b218c416e76b7307ecac3a9533f"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v39.5.0.tar.gz"
+  sha256 "8d8d9f244f4a6c5c357a10162484e4db1786a4e01b7c66a6fdc9cabe99ef1156"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
@@ -24,19 +24,15 @@ class Manifest < Formula
   end
 
   def post_install
-    # Clean up legacy manual installations
+    # Clean up legacy manual installation binary (conflicts with Homebrew binary).
+    # NOTE: ~/.manifest-cli is intentionally preserved — it is the runtime state/data
+    # directory (logs, config markers, etc.), NOT a legacy install artifact.
     legacy_bin = Pathname.new(Dir.home)/".local"/"bin"/"manifest"
-    legacy_dir = Pathname.new(Dir.home)/".manifest-cli"
     user_global_config = Pathname.new(Dir.home)/".env.manifest.global"
 
     if legacy_bin.exist?
       legacy_bin.unlink
-      ohai "Removed legacy manual install: #{legacy_bin}"
-    end
-
-    if legacy_dir.exist?
-      legacy_dir.rmtree
-      ohai "Removed legacy install directory: #{legacy_dir}"
+      ohai "Removed legacy manual install binary: #{legacy_bin}"
     end
 
     # Apply config migrations so `brew upgrade` is functionally equivalent
