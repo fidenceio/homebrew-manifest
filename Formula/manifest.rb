@@ -1,8 +1,8 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v47.4.2.tar.gz"
-  sha256 "06743774a2ebb290ecad4bcc139ee9079968e6a95e53ab5f8c281c9c22fa75c9"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v47.4.3.tar.gz"
+  sha256 "acc4f51b083e579402818cf945500e6c72ec9eeada018ec734a6a819dd78d019"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
@@ -28,13 +28,6 @@ class Manifest < Formula
 
         if [ "$current_major" -ge "$min_major" ]; then
           return 0
-        fi
-
-        if [ "${MANIFEST_CLI_BASH_REEXEC:-0}" = "1" ]; then
-          echo "Manifest CLI requires Bash 5+." >&2
-          echo "Current shell: bash ${BASH_VERSION:-unknown}" >&2
-          echo "Install Bash 5+ and retry." >&2
-          return 1
         fi
 
         local candidate major
