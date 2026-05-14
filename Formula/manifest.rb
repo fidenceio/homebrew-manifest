@@ -1,14 +1,14 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v47.8.4.tar.gz"
-  sha256 "a8d1587e691d892c91b0a8d61271a0f93c7d3c481bfbf8a528018bb29db9f084"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v47.8.5.tar.gz"
+  sha256 "f6e39773b0b7f4ec7e05990ff17bd358528e7d9a84f817b8418441dac1fde749"
   license "MIT"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
   depends_on "bash"
   depends_on "git" => :recommended
-  depends_on "yq" => :recommended
+  depends_on "yq"
   depends_on "coreutils" => :optional
 
   def install
@@ -22,11 +22,13 @@ class Manifest < Formula
       #!/usr/bin/env bash
       set -e
 
+      CLI_DIR="#{libexec}"
+      source "$CLI_DIR/modules/core/manifest-requirements.sh"
+
       ensure_bash5_or_reexec() {
-        local min_major=5
         local current_major="${BASH_VERSINFO[0]:-0}"
 
-        if [ "$current_major" -ge "$min_major" ]; then
+        if manifest_requirement_bash_is_supported_major "$current_major"; then
           return 0
         fi
 
@@ -45,13 +47,13 @@ class Manifest < Formula
             continue
           fi
 
-          major="$("$candidate" -c 'echo "${BASH_VERSINFO[0]:-0}"' 2>/dev/null || echo "0")"
-          if [ "$major" -ge "$min_major" ]; then
+          major="$(manifest_requirement_bash_major_from_command "$candidate")"
+          if manifest_requirement_bash_is_supported_major "$major"; then
             MANIFEST_CLI_BASH_REEXEC=1 exec "$candidate" "$0" "$@"
           fi
         done
 
-        echo "Manifest CLI requires Bash 5+." >&2
+        echo "Manifest CLI requires Bash ${MANIFEST_CLI_REQUIRED_BASH_VERSION}+." >&2
         echo "Current shell: bash ${BASH_VERSION:-unknown}" >&2
         echo "No compatible bash found in common locations." >&2
         return 1
@@ -59,7 +61,6 @@ class Manifest < Formula
 
       ensure_bash5_or_reexec "$@"
 
-      CLI_DIR="#{libexec}"
       source "$CLI_DIR/modules/core/manifest-core.sh"
       main "$@"
     EOS
