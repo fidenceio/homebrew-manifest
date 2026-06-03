@@ -1,21 +1,27 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v51.3.0.tar.gz"
-  sha256 "69c47faf71d06a32f5618346fc12ee9074c20ea2e1f37667901166261b5d283f"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v52.0.0.tar.gz"
+  sha256 "535795b25ed4dbb063cf9f892eacdac6c9e5af0f55366a3d7e9a1dcbed26472b"
   license "Apache-2.0"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
   depends_on "bash"
   depends_on "git" => :recommended
   depends_on "yq"
+  # GNU userland: coreutils ships gdate/gstat (and the gnubin date/stat),
+  # gnu-sed ships GNU sed. The bin wrapper forces their gnubin onto PATH so the
+  # CLI runs one GNU codepath (sed -i / date -d / stat -c) instead of branching
+  # on BSD. coreutils alone is insufficient — GNU sed lives in gnu-sed.
   depends_on "coreutils"
+  depends_on "gnu-sed"
 
   def install
     # Copy all project files to libexec
     libexec.install Dir["*"]
     bash_completion.install libexec/"completions/manifest.bash" => "manifest"
     zsh_completion.install libexec/"completions/_manifest"
+    fish_completion.install libexec/"completions/manifest.fish"
 
     # Create a wrapper script that points to the installed location.
     # Homebrew may launch this through macOS /bin/bash 3.2; re-exec into the
@@ -26,6 +32,11 @@ class Manifest < Formula
 
       CLI_DIR="#{libexec}"
       source "$CLI_DIR/modules/core/manifest-requirements.sh"
+
+      # Put GNU sed/date/stat ahead of the BSD builtins on macOS before re-exec,
+      # so the relaunched shell (and every module) runs one GNU codepath. The
+      # formula declares coreutils + gnu-sed, so these gnubin dirs are present.
+      manifest_requirement_prepend_gnu_userland_path
 
       ensure_bash5_or_reexec() {
         local current_major="${BASH_VERSINFO[0]:-0}"
