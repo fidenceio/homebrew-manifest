@@ -1,0 +1,202 @@
+name: bottle
+
+# Builds a platform-agnostic (:all) bottle for the manifest formula so that
+# `brew install/upgrade` pulls a prebuilt artifact and skips Homebrew's
+# source-build path — and its host Xcode/CLT minimum-version gate (which blocks
+# upgrades on, e.g., a macOS pre-release with an older toolchain).
+#
+# Safe-by-construction: the bottle block is only committed to the public formula
+# after a real `brew install` from that bottle succeeds on BOTH macOS and Linux.
+# A malformed block or broken bottle fails validation and is never committed.
+# `workflow_dispatch` defaults to dry-run (build + validate, no commit) for safe
+# iteration.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Formula/manifest.rb'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build + validate only; upload the asset but do NOT commit the bottle block'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bottle-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  build:
+    runs-on: macos-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      release_tag: ${{ steps.meta.outputs.release_tag }}
+      skip: ${{ steps.meta.outputs.skip }}
+    steps:
+      - name: Checkout tap
+        uses: actions/checkout@v4
+
+      - name: Parse formula version + idempotency
+        id: meta
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's|.*archive/refs/tags/v\([0-9][0-9.]*\)\.tar\.gz.*|\1|p' Formula/manifest.rb | head -1)"
+          if [ -z "$version" ]; then
+            echo "::error::Could not parse a version from Formula/manifest.rb url"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "release_tag=bottle-v$version" >> "$GITHUB_OUTPUT"
+          # Skip if this formula already declares an :all bottle (the commit-back
+          # push, or a re-run on an already-bottled version).
+          if grep -Eq 'sha256 cellar:.*all:' Formula/manifest.rb; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Formula already declares an :all bottle — nothing to do."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Homebrew
+        if: steps.meta.outputs.skip != 'true'
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Build the :all bottle and upload the asset
+        if: steps.meta.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euxo pipefail
+          ROOT_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
+
+          # Tap the *checked-out* copy so we bottle exactly this formula (not a
+          # cached clone): symlink it into Homebrew's Taps tree.
+          TAP_DIR="$(brew --repository)/Library/Taps/fidenceio/homebrew-tap"
+          mkdir -p "$(dirname "$TAP_DIR")"
+          rm -rf "$TAP_DIR"
+          ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
+
+          work="$(mktemp -d)"; cd "$work"
+          brew install --build-bottle --formula fidenceio/tap/manifest
+          brew bottle --json --no-rebuild --root-url="$ROOT_URL" fidenceio/tap/manifest
+
+          echo "::group::brew bottle artifacts"
+          ls -la
+          cat ./*.bottle.json || true
+          echo "::endgroup::"
+
+          built="$(ls manifest--${VERSION}.*.bottle.tar.gz | head -1)"
+          # Relabel the platform-tagged bottle to :all (content is identical, so
+          # the rename does not change the sha256). Use :any — always-relocatable,
+          # which the Linux validation step proves; declaring :any_skip_relocation
+          # would be the one unsafe choice if relocation is actually needed.
+          dd="manifest--${VERSION}.all.bottle.tar.gz"   # double-dash (local form)
+          sd="manifest-${VERSION}.all.bottle.tar.gz"    # single-dash (some URL conventions)
+          mv "$built" "$dd"
+          cp "$dd" "$sd"
+          sha="$(shasum -a 256 "$dd" | cut -d' ' -f1)"
+
+          # Amend the formula: inject a bottle block right after the `head` line.
+          # Done in Ruby (always present via Homebrew) to avoid BSD-vs-GNU awk/sed
+          # newline-handling traps on the macOS runner.
+          ruby -e '
+            f, root, sha = ARGV
+            src = File.read(f)
+            block = %Q(\n  bottle do\n    root_url "#{root}"\n    sha256 cellar: :any, all: "#{sha}"\n  end\n)
+            raise "no head line to anchor on" unless src.sub!(/^(  head .*\n)/) { $1 + block }
+            File.write("/tmp/manifest.amended.rb", src)
+          ' "$GITHUB_WORKSPACE/Formula/manifest.rb" "$ROOT_URL" "$sha"
+          echo "::group::amended formula"; cat /tmp/manifest.amended.rb; echo "::endgroup::"
+          ruby -c /tmp/manifest.amended.rb
+          cp /tmp/manifest.amended.rb "$GITHUB_WORKSPACE/Formula/manifest.rb"
+
+          # Publish both asset name forms so validation fetches regardless of the
+          # single/double-dash URL convention. Reversible: delete the release.
+          if ! gh release view "$RELEASE_TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --repo "$REPO" \
+              --title "manifest $VERSION bottle" \
+              --notes "Platform-agnostic (:all) Homebrew bottle for manifest $VERSION." \
+              --prerelease
+          fi
+          gh release upload "$RELEASE_TAG" --repo "$REPO" --clobber "$work/$dd" "$work/$sd"
+
+      - name: Upload amended formula
+        if: steps.meta.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: amended-formula
+          path: ${{ github.workspace }}/Formula/manifest.rb
+          retention-days: 3
+
+  validate:
+    needs: build
+    if: needs.build.outputs.skip != 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Download amended formula
+        uses: actions/download-artifact@v4
+        with:
+          name: amended-formula
+          path: dl
+
+      - name: Install from the :all bottle and smoke-test
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euxo pipefail
+          TAP_DIR="$(brew --repository)/Library/Taps/fidenceio/homebrew-tap"
+          mkdir -p "$TAP_DIR/Formula"
+          cp dl/manifest.rb "$TAP_DIR/Formula/manifest.rb"
+          # Force the bottle — must NOT build from source (that is the whole point).
+          brew install --force-bottle --formula fidenceio/tap/manifest
+          installed="$(brew list --versions manifest)"
+          echo "installed: $installed"
+          case "$installed" in *"$VERSION"*) : ;; *) echo "::error::version mismatch: $installed"; exit 1 ;; esac
+          "$(brew --prefix)/bin/manifest" --version
+
+  commit:
+    needs: [build, validate]
+    if: >-
+      needs.build.outputs.skip != 'true' &&
+      ( github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.dry_run == false) )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tap
+        uses: actions/checkout@v4
+
+      - name: Download amended formula
+        uses: actions/download-artifact@v4
+        with:
+          name: amended-formula
+          path: dl
+
+      - name: Commit bottle block
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          cp dl/manifest.rb Formula/manifest.rb
+          if git diff --quiet Formula/manifest.rb; then
+            echo "No change to commit."; exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/manifest.rb
+          git commit -m "Add :all bottle for manifest ${VERSION} [skip ci]"
+          git push
