@@ -85,7 +85,7 @@ jobs:
           ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
 
           work="$(mktemp -d)"; cd "$work"
-          brew install --build-bottle --formula fidenceio/tap/manifest
+          brew install --build-bottle --formula --verbose fidenceio/tap/manifest
           brew bottle --json --no-rebuild --root-url="$ROOT_URL" fidenceio/tap/manifest
 
           echo "::group::brew bottle artifacts"
@@ -127,6 +127,18 @@ jobs:
               --prerelease
           fi
           gh release upload "$RELEASE_TAG" --repo "$REPO" --clobber "$work/$dd" "$work/$sd"
+
+      - name: Dump Homebrew failure logs
+        if: failure()
+        run: |
+          brew config || true
+          for f in ~/Library/Logs/Homebrew/manifest/* ~/.cache/Homebrew/Logs/manifest/*; do
+            [ -f "$f" ] || continue
+            echo "::group::$f"
+            cat "$f"
+            echo "::endgroup::"
+          done
+          true
 
       - name: Upload amended formula
         if: steps.meta.outputs.skip != 'true'
