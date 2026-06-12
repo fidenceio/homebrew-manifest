@@ -65,7 +65,12 @@ jobs:
 
       - name: Set up Homebrew
         if: steps.meta.outputs.skip != 'true'
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          # `auto` resolves to false for tap repos, which puts this CI on
+          # brew's main-branch HEAD — a moving target that broke the 53.3.0
+          # bottle (Homebrew 6 dev snapshot). Pin the latest stable tag.
+          stable: true
 
       - name: Build the :all bottle and upload the asset
         if: steps.meta.outputs.skip != 'true'
@@ -83,6 +88,12 @@ jobs:
           mkdir -p "$(dirname "$TAP_DIR")"
           rm -rf "$TAP_DIR"
           ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
+
+          # Homebrew 6 CI hardening rejects installs from a path-symlinked tap
+          # before the formula even runs (no error text, no log file). This
+          # build installs our own checked-out formula by design — drop the
+          # two policies for this step only.
+          unset HOMEBREW_FORBID_PACKAGES_FROM_PATHS HOMEBREW_REQUIRE_TAP_TRUST || true
 
           work="$(mktemp -d)"; cd "$work"
           brew install --build-bottle --formula --verbose fidenceio/tap/manifest
@@ -158,7 +169,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          # `auto` resolves to false for tap repos, which puts this CI on
+          # brew's main-branch HEAD — a moving target that broke the 53.3.0
+          # bottle (Homebrew 6 dev snapshot). Pin the latest stable tag.
+          stable: true
 
       - name: Download amended formula
         uses: actions/download-artifact@v4
@@ -171,6 +187,9 @@ jobs:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euxo pipefail
+          # Same Homebrew 6 CI policies as the build job — the copied-in
+          # formula is "from a path" by design here.
+          unset HOMEBREW_FORBID_PACKAGES_FROM_PATHS HOMEBREW_REQUIRE_TAP_TRUST || true
           TAP_DIR="$(brew --repository)/Library/Taps/fidenceio/homebrew-tap"
           mkdir -p "$TAP_DIR/Formula"
           cp dl/manifest.rb "$TAP_DIR/Formula/manifest.rb"
