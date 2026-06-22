@@ -4,15 +4,10 @@
 class Manifest < Formula
   desc "A powerful CLI tool for managing manifest files, versioning, and repository operations with trusted timestamp verification"
   homepage "https://github.com/fidenceio/manifest.cli"
-  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v55.3.0.tar.gz"
-  sha256 "9a3807adb1a4306465d02e68d5196a21776cd9e7549b9ddb67a5193b269577a3"
+  url "https://github.com/fidenceio/manifest.cli/archive/refs/tags/v55.4.0.tar.gz"
+  sha256 "1089d1386e795df7539e782714e228fb99e04961e447b066679aeea9277fb840"
   license "Apache-2.0"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
-
-  bottle do
-    root_url "https://github.com/fidenceio/homebrew-tap/releases/download/bottle-v55.3.0"
-    sha256 cellar: :any, all: "d08365440d2c8cbae82d2d6316ea9d876b01b192ab7a3740f74734c6df5a0265"
-  end
 
   depends_on "bash"
   depends_on "git" => :recommended
