@@ -9,6 +9,11 @@ class Manifest < Formula
   license "Apache-2.0"
   head "https://github.com/fidenceio/manifest.cli.git", branch: "main"
 
+  bottle do
+    root_url "https://github.com/fidenceio/homebrew-tap/releases/download/bottle-v57.0.1"
+    sha256 cellar: :any, all: "65906b36636502624a6a27ccc151017e4242e10a364642659c3fca0ed14e9736"
+  end
+
   depends_on "bash"
   depends_on "git" => :recommended
   depends_on "yq"
