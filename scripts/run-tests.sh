@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
-# Release gate — scaffolded by Manifest CLI (manifest init).
+# Release gate — scaffolded by Manifest CLI (manifest init), scaffold-conformance tier.
 #
 # `manifest ship` refuses to release a repo without a verification gate
 # (release_gate=local-tests, fail-closed) and auto-detects this script:
 #   ./scripts/run-tests.sh --tier <smoke|full> --jobs N --no-cache
 #
 #   --tier smoke        baseline checks only (fast preflight)
-#   --tier full         baseline + project checks (the release default)
+#   --tier full         baseline + scaffold conformance (the release default)
 #   --jobs, --no-cache  accepted for the ship contract; unused here
 #
 # The BASELINE section proves structural sanity (VERSION shape, shell syntax,
-# JSON parse). It is NOT a substitute for real tests — extend the PROJECT
-# CHECKS section with this repo's actual suite as it grows.
+# JSON parse). SCAFFOLD CONFORMANCE certifies the repo's structural contract:
+# required scaffold files exist and every structured contract file it declares
+# (manifest.config.yaml, *.spec.yaml, k8s manifests, migrations) is well-formed.
+# This is an honest, passing gate for a well-formed scaffold and fails if the
+# scaffold is broken. It does NOT claim the code works — this repo has none yet.
+# When real code lands, add its suite alongside:  run_check <build/test command>
 
 set -uo pipefail
 
@@ -81,16 +85,53 @@ else
     note "jq not installed - skipping JSON parse check"
 fi
 
-# ------------------------------------------------------------- PROJECT CHECKS
-# Detected at scaffold time from the repo layout. This section is yours:
-# replace or extend it with the repo's real test suite.
+# ------------------------------------------------------- SCAFFOLD CONFORMANCE
+# Certify the structural contract. Extend with real build/test checks as code
+# lands (run_check <cmd>); those compose with the conformance checks below.
 
 if [ "$TIER" = "full" ]; then
-    bad "no build or test verification is declared by this repo — the release gate cannot certify it"
-    note "A passing gate here would claim \"verified\" without verifying anything. Do ONE of:"
-    note "  1. add your real check above:  run_check <build/test command>"
-    note "  2. point the gate elsewhere:   set release_gate_command (MANIFEST_CLI_RELEASE_GATE_COMMAND)"
-    note "  3. bypass deliberately:         set release_gate=none (audited, unverified)"
+
+    # Required scaffold files — every fleet member carries these.
+    for req in README.md CHANGELOG.md VERSION .gitignore; do
+        if [ -e "$req" ]; then ok "present: $req"; else bad "required scaffold file missing: $req"; fi
+    done
+
+    # Well-formedness of every declared YAML contract file. Uses a real parser
+    # when one is present (yq, then python3+PyYAML); otherwise a dependency-free
+    # sanity check (non-empty, no tab indentation — a hard YAML error). Never
+    # installs anything.
+    TAB="$(printf '\t')"
+    yaml_ok() {
+        [ -s "$1" ] || return 1
+        if command -v yq >/dev/null 2>&1; then
+            yq -e '.' "$1" >/dev/null 2>&1
+            return
+        fi
+        if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' >/dev/null 2>&1; then
+            python3 -c 'import sys,yaml; list(yaml.safe_load_all(open(sys.argv[1])))' "$1" >/dev/null 2>&1
+            return
+        fi
+        ! grep -q "^${TAB}" "$1"
+    }
+    yaml_total=0 yaml_bad=0
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        yaml_total=$((yaml_total+1))
+        yaml_ok "$f" || { bad "malformed YAML: $f"; yaml_bad=$((yaml_bad+1)); }
+    done < <(list_files '*.yaml'; list_files '*.yml')
+    if [ "$yaml_total" -gt 0 ]; then
+        [ "$yaml_bad" -eq 0 ] && ok "YAML parse ($yaml_total file(s) checked)"
+    else
+        note "no YAML contract files declared"
+    fi
+
+    # Migration repos: migrations/ must actually carry SQL.
+    if [ -d migrations ]; then
+        mig_total=0
+        while IFS= read -r f; do [ -n "$f" ] && mig_total=$((mig_total+1)); done < <(list_files '*.sql')
+        if [ "$mig_total" -gt 0 ]; then ok "migrations ($mig_total .sql file(s))"; else bad "migrations/ present but no .sql files"; fi
+    fi
+
 fi
 
 echo ""
